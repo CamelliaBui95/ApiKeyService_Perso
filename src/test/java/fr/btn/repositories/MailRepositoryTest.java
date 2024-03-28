@@ -2,6 +2,7 @@ package fr.btn.repositories;
 
 import fr.btn.entities.ClientEntity;
 import fr.btn.entities.MailEntity;
+import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -14,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@Transactional
+@TestTransaction
 public class MailRepositoryTest {
     @Inject
     MailRepository mailRepository;
@@ -25,13 +26,8 @@ public class MailRepositoryTest {
     private static MailEntity testMail;
     private static ClientEntity testClient;
 
-    public MailRepositoryTest() {}
-
     @BeforeEach
     void init() {
-        if(testClient != null && testMail != null)
-            return;
-
         testClient = ClientEntity
                 .builder()
                 .name("TEST CLIENT")
@@ -41,8 +37,6 @@ public class MailRepositoryTest {
                 .createdDate(LocalDate.now())
                 .quota(0)
                 .build();
-
-        clientRepository.persist(testClient);
 
         testMail = MailEntity
                 .builder()
@@ -56,6 +50,7 @@ public class MailRepositoryTest {
     @Test
     @Order(1)
     void persistMail() {
+        clientRepository.persist(testClient);
         mailRepository.persist(testMail);
 
         assertTrue(mailRepository.isPersistent(testMail));
@@ -64,20 +59,11 @@ public class MailRepositoryTest {
     @Test
     @Order(2)
     void getMailCountByMonth() {
+        clientRepository.persist(testClient);
+        mailRepository.persist(testMail);
+
         long result = mailRepository.getMailCountByMonth(testClient.getApiKey(), LocalDate.now().getMonth().getValue());
 
         assertEquals(1, result);
     }
-
-    @Test
-    @Order(10)
-    void deleteMail() {
-        mailRepository.deleteById(testMail.getId());
-
-        MailEntity deleted = mailRepository.findById(testMail.getId());
-        assertNull(deleted);
-
-        clientRepository.deleteById(testClient.getId());
-    }
-
 }

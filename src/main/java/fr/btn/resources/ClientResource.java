@@ -15,7 +15,6 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
-import javax.xml.validation.Validator;
 import java.time.LocalDate;
 import java.util.List;
 

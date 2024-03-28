@@ -1,13 +1,19 @@
 package fr.btn.resources;
 
 import fr.btn.WiremockMailService;
+import fr.btn.entities.ClientEntity;
+import fr.btn.repositories.ClientRepository;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import jakarta.transaction.Transactional;
 import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
+import org.mockito.Mockito;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
@@ -17,15 +23,40 @@ import static org.junit.jupiter.api.Assertions.*;
 @QuarkusTest
 @QuarkusTestResource(WiremockMailService.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@Transactional
 class ClientResourceTest {
 
+    @InjectMock
+    ClientRepository clientRepository;
+    private static ClientEntity mockClient = ClientEntity
+            .builder()
+            .id(1)
+            .createdDate(LocalDate.now())
+            .name("TEST CLIENT")
+            .email("test@mail.com")
+            .quota(10)
+            .status("ACTIVE")
+            .mails(new ArrayList<>())
+            .build();
+
+    @BeforeEach
+    void setUp() {
+        List<ClientEntity> mockClients = new ArrayList<>();
+        mockClients.add(mockClient);
+
+        Mockito.when(clientRepository.listAll()).thenReturn(mockClients);
+        Mockito.when(clientRepository.findById(1)).thenReturn(mockClient);
+        Mockito.when(clientRepository.findClientByEmail("test@mail.com")).thenReturn(mockClient);
+    }
     @Test
-    @Order(2)
+    @Order(3)
     void getAll() {
         given()
                 .when()
                 .get("/clients")
                 .then()
+                .log()
+                .all()
                 .body("size()", equalTo(1))
                 .body("id", hasItems(1))
                 .body("name", hasItems("TEST CLIENT"))
@@ -35,7 +66,7 @@ class ClientResourceTest {
     }
 
     @Test
-    @Order(3)
+    @Order(4)
     void getClientById() {
         given()
                 .when()
@@ -67,7 +98,22 @@ class ClientResourceTest {
     }
 
     @Test
-    @Order(4)
+    @Order(2)
+    void createNewClientWithExistingEmail() {
+        Mockito.when(clientRepository.countClientsByEmail("test@mail.com")).thenReturn(1L);
+
+        given()
+                .formParam("name", "TEST CLIENT")
+                .formParam("email", "test@mail.com")
+                .formParam("quota", 10)
+                .when()
+                .post("/clients")
+                .then()
+                .statusCode(HttpStatus.SC_NOT_ACCEPTABLE);
+    }
+
+    @Test
+    @Order(5)
     void renewApiKey() {
         given()
                 .queryParam("email", "test@mail.com")
@@ -78,7 +124,7 @@ class ClientResourceTest {
     }
 
     @Test
-    @Order(5)
+    @Order(6)
     void renewQuota() {
         given()
                 .formParam("email", "test@mail.com")
@@ -93,7 +139,7 @@ class ClientResourceTest {
     }
 
     @Test
-    @Order(6)
+    @Order(7)
     void createNewClientWithInvalidEmail() {
         given()
                 .formParam("name", "TEST CLIENT")
@@ -105,25 +151,14 @@ class ClientResourceTest {
                 .statusCode(HttpStatus.SC_BAD_REQUEST);
     }
 
-    @Test
-    @Order(7)
-    void createNewClientWithExistingEmail() {
-        given()
-                .formParam("name", "TEST CLIENT 2")
-                .formParam("email", "test@mail.com")
-                .formParam("quota", 10)
-                .when()
-                .post("/clients")
-                .then()
-                .statusCode(HttpStatus.SC_NOT_ACCEPTABLE);
-    }
+
 
     @Test
     @Order(8)
     void getClientByInvalidId() {
         given()
                 .when()
-                .get("/clients/2")
+                .get("/clients/99")
                 .then()
                 .statusCode(HttpStatus.SC_NOT_FOUND);
     }

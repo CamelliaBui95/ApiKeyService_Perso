@@ -5,6 +5,7 @@ import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.client.Client;
 import org.junit.jupiter.api.*;
 
 import java.time.LocalDate;
@@ -19,8 +20,9 @@ class ClientRepositoryTest {
     @Inject
     ClientRepository clientRepository;
     private static ClientEntity testClient;
+
     @BeforeAll
-     static void init() {
+    static void init() {
         testClient = ClientEntity
                 .builder()
                 .name("TEST CLIENT")
@@ -43,9 +45,9 @@ class ClientRepositoryTest {
     @Test
     @Order(2)
     void findClientById() {
-        ClientEntity foundClient = clientRepository.findById(testClient.getId());
+        ClientEntity foundClient = clientRepository.findById(1);
 
-        assertEquals(foundClient.getId(), testClient.getId());
+        assertEquals(foundClient.getId(), 1);
         assertEquals(foundClient.getName(), testClient.getName());
         assertEquals(foundClient.getEmail(), testClient.getEmail());
     }
@@ -96,7 +98,7 @@ class ClientRepositoryTest {
     @Test
     @Order(8)
     void updateClient() {
-        ClientEntity existingClient = clientRepository.findById(testClient.getId());
+        ClientEntity existingClient = clientRepository.findById(1);
 
         String newKey = "UPDATED_TEST_API_KEY";
         existingClient.setApiKey(newKey);
@@ -108,8 +110,11 @@ class ClientRepositoryTest {
     @Order(10)
     @Test
     void deleteClientById() {
-        clientRepository.deleteById(testClient.getId());
-        ClientEntity deletedClient = clientRepository.findById(testClient.getId());
+        ClientEntity found = clientRepository.findById(1);
+        assertNotNull(found);
+
+        clientRepository.deleteById(1);
+        ClientEntity deletedClient = clientRepository.findById(1);
 
         assertNull(deletedClient);
     }

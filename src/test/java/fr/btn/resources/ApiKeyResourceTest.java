@@ -6,9 +6,14 @@ import fr.btn.models.MailClient;
 import fr.btn.repositories.ClientRepository;
 import fr.btn.repositories.MailRepository;
 import io.quarkus.test.InjectMock;
+import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.http.ContentType;
+import io.restassured.response.Response;
+import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.*;
 import org.mockito.Mockito;
 
@@ -50,6 +55,7 @@ class ApiKeyResourceTest {
                     .subject("TEST SUBJECT")
                     .recipient("foo@quarkus.io")
                     .build();
+
     }
 
     @BeforeEach
@@ -59,7 +65,6 @@ class ApiKeyResourceTest {
             testClient.setId(found.getId());
             return;
         }
-
 
         clientRepository.persist(testClient);
     }
@@ -71,6 +76,7 @@ class ApiKeyResourceTest {
                 .when()
                 .get("/apiKey/" + API_KEY)
                 .then()
+                .statusCode(200)
                 .body("quota", is(0))
                 .body("status", is("ACTIVE"));
     }
@@ -82,20 +88,19 @@ class ApiKeyResourceTest {
                 .when()
                 .get("/apiKey/FALSE_KEY")
                 .then()
-                .equals(null);
+                .statusCode(HttpStatus.SC_NOT_FOUND);
     }
 
     @Test
     @Order(7)
     void getMailCountByMonth() {
-        Integer result = given()
+        given()
                             .when()
                             .get("/apiKey/" + API_KEY + "/mail_count")
                             .then()
-                            .extract()
-                            .as(Integer.class);
-
-        assertEquals(1, result);
+                            .contentType("text/plain")
+                            .statusCode(200)
+                            .body(is("1"));
 
         mailRepository.delete("sender.apiKey=?1", API_KEY);
         clientRepository.deleteById(testClient.getId());
@@ -104,14 +109,14 @@ class ApiKeyResourceTest {
     @Test
     @Order(6)
     void getMailCountByMonthWithInvalidKey() {
-        Integer result = given()
+        given()
                 .when()
                 .get("/apiKey/FALSE_KEY/mail_count")
                 .then()
-                .extract()
-                .as(Integer.class);
+                .contentType(ContentType.TEXT)
+                .statusCode(200)
+                .body(is("0"));
 
-        assertEquals(0, result);
     }
 
     @Test

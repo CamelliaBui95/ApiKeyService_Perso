@@ -29,34 +29,37 @@ public class ApiKeyResource {
 
     @GET
     @Path("{apiKey}")
-    @Operation(description = "Return a client by its api key")
-    public ApiClientDto getClientByApiKey(@PathParam("apiKey") String apiKey) {
+    @Operation(summary = "Return a client by its api key")
+    public Response getClientByApiKey(@PathParam("apiKey") String apiKey) {
 
         if(apiKey == null)
-            return null;
+            return Response.status(Response.Status.BAD_REQUEST).build();
 
         ClientEntity foundClient = clientRepository.findClientByApiKey(apiKey);
 
         if(foundClient == null)
-            return null;
+            return Response.status(Response.Status.NOT_FOUND).build();
 
-        return new ApiClientDto(foundClient);
+        return Response.ok(new ApiClientDto(foundClient)).build();
     }
 
     @GET
     @Path("/{apiKey}/mail_count")
-    @Operation(description = "Return number of mails of a given client for a given month")
-    public int getMailCountByMonth(@PathParam("apiKey") String apiKey) {
+    @Produces(MediaType.TEXT_PLAIN)
+    @Operation(summary = "Return number of mails of a given client for a given month")
+    public Response getMailCountByMonth(@PathParam("apiKey") String apiKey) {
         if(apiKey == null)
-            return -1;
+            return Response.status(Response.Status.BAD_REQUEST).build();
 
-        return mailRepository.getMailCountByMonth(apiKey, LocalDate.now().getMonth().getValue());
+        int result = mailRepository.getMailCountByMonth(apiKey, LocalDate.now().getMonth().getValue());
+
+        return Response.ok(result).build();
     }
 
     @POST
     @Transactional
     @Path("{apiKey}")
-    @Operation(description = "Save mail in DB")
+    @Operation(summary = "Save mail in DB")
     public Response saveMail(@PathParam("apiKey") String apiKey, MailClient mailClient) {
         if(apiKey == null || mailClient == null)
             return Response.status(Response.Status.BAD_REQUEST).build();

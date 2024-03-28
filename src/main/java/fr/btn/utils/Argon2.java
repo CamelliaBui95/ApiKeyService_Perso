@@ -26,12 +26,4 @@ public class Argon2 {
 
         return Base64.getUrlEncoder().encodeToString(hashedData.getBytes());
     }
-
-    public static boolean validate(String rawData, String hashedData) {
-        byte[] encodedBytes = Base64.getDecoder().decode(hashedData);
-        hashedData = new String(encodedBytes);
-        hashedData = SUFFIX + hashedData;
-
-        return new Argon2PasswordEncoder(SALT_LENGTH,KEY_LENGTH,PARALLELISM,MEMORY,ITERATIONS).matches(rawData, hashedData);
-    }
 }

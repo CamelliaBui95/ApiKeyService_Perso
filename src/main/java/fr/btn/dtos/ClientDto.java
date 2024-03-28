@@ -6,6 +6,7 @@ import fr.btn.entities.ClientEntity;
 import fr.btn.entities.MailEntity;
 import lombok.Data;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,7 +14,8 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
+@Getter
+@Setter
 public class ClientDto {
     @JsonInclude(JsonInclude.Include.NON_ABSENT)
     @JsonProperty(index = 1)
